@@ -1,4 +1,5 @@
 # Introduction
+The goal of this project is to create a presence sensor for a bed that reports its state to Home Assistant and thus can be used in automations. This is achieved by using two pressure sensors attached to an ESP32 micro controller which then relays the information about each half of the bed to the home automation server.
 # Fundamentals
 ## Whats is ESPHome?
 ## On which platforms does it run?
