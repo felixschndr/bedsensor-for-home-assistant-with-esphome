@@ -1,11 +1,50 @@
 # Introduction
 The goal of this project is to create a presence sensor for a bed that reports its state to Home Assistant and thus can be used in automations. This is achieved by using two pressure sensors attached to an ESP32 micro controller which then relays the information about each half of the bed to the home automation server.
 # Fundamentals
-## Whats is ESPHome?
+First, let us cover some of the basics that are necessary for this project.
+## What is ESPHome?
+ESPHome is an open source platform that allows users to configure microcontrollers and integrate them into smart home systems such as Home Assistant. As such microcontrollers are very inexpensive, they are ideal for implementing your own smart home projects.
 ## On which platforms does it run?
+ESPHome *primarily* supports microcontrollers from the ESP8266 and ESP32 families, both manufactured by the Chinese company [*Espressif Systems*](https://www.espressif.com/). Some of the popular microcontrollers that can be used for ESPHome projects include the following:
+* ESP8266-based microcontrollers
+  * [NodeMCU](https://www.nodemcu.com/)
+  * [Wemos D1 Mini](https://www.wemos.cc/en/latest/d1/d1_mini.html)
+  * [ESP-01](https://www.utmel.com/components/esp-01-wi-fi-module-esp-01-pinout-programming-and-esp-01-vs-esp8266-faq?id=990)
+  * [ESP-12E and ESP-12F](https://www.elecrow.com/blog/things-you-should-know-about-esp8266-wifi-module.html)
+* ESP32-based microcontrollers
+  * [ESP32 Dev Kit](https://www.espressif.com/en/products/devkits/esp32-devkitc)
+  * [Wemos D32](https://www.wemos.cc/en/latest/d32/d32.html)
+  * [ESP32-CAM](https://www.arducam.com/esp32-machine-vision-learning-guide/) (an ESP32 based system which offers an onboard camera module for around $7)
+
+ESP32 and ESP8266 are *only* the chips themselves: They are the platforms and are manufactured by *Espressif Systems*. These are *System on a Chip* (SoC) designs, meaning they integrate various components such as CPU, memory, and wireless connectivity onto a single chip.
+
+There are several variants of these chips: Espressif Systems offers different ESP32/ESP8266 chip variants with varying features such as number of cores (single or dual), clock speed, and memory capacity.
+
+These SoCs are then placed on different boards: Several companies produce development boards specifically designed for ESP32/ESP8266 chips. These boards typically include additional components such as voltage regulators, USB ports, and breakout pins for connecting external sensors or devices.
+
+Although ESPHome primarily runs on [ESP32](https://esphome.io/components/esp32) and [ESP8266](https://esphome.io/components/esp8266)-based platforms it also includes limited support for [RP2040](https://esphome.io/components/rp2040)-based chips and chips based on the [LibreTiny](https://esphome.io/components/libretiny) platform.
+
 # Installation and Configuration
-## How to flash an ESP32
+
+In this project we will use the an ESP-32 development board which can be acquired on different platforms like [Amazon](https://www.amazon.com/s?k=ESP32) or [AliExpress](https://www.aliexpress.us/w/wholesale-esp32.html) for less then $10.
 ## Setup of ESPHome
+There are multiple ways to use ESPHome. For testing purposes and initialization of the microcontroller it is possible to use a web hosted version of ESPHome available at [https://web.esphome.io/](https://web.esphome.io/). However this is only a lite variant of ESPHome. For bigger projects it is recommended to self-host ESPHome. This is quite easy with the use of a docker container:
+```yml
+version: '3'
+
+services:
+  esphome:
+    image: ghcr.io/esphome/esphome
+    volumes:
+      - ./data/esphome:/config
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 6052:6052
+    environment:
+      - USERNAME=admin
+      - PASSWORD=mysecretpassword
+```
+## How to flash an ESP32
 ## Configuration of device
 ### Wifi
 ### Encryption
