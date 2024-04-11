@@ -28,7 +28,10 @@ Although ESPHome primarily runs on [ESP32](https://esphome.io/components/esp32) 
 
 # Installation and Configuration
 
-In this project we will use the an ESP-32 development board which can be acquired on different platforms like [Amazon](https://www.amazon.com/s?k=ESP32) or [AliExpress](https://www.aliexpress.us/w/wholesale-esp32.html) for less then $10.
+In this project we will use the an ESP-32 development board which can be acquired on different platforms like [Amazon.com](https://www.amazon.com/s?k=ESP32), [Amazon.de](https://www.amazon.de/s?k=esp32) or [AliExpress](https://www.aliexpress.us/w/wholesale-esp32.html) for less then $10.
+
+I suggest that you look for a microcontroller that uses USB-C instead of micro-USB to be more future-proof.
+> Unfortunately, I did not explicitly check for this when I ordered my ESP32, so I am stuck with micro-USB. Don't make the same mistake I did.
 ## Setup of ESPHome
 There are multiple ways to use ESPHome. For testing purposes and initialization of the microcontroller it is possible to use a web hosted version of ESPHome available at [https://web.esphome.io/](https://web.esphome.io/). However this is only a lite variant of ESPHome. For bigger projects it is recommended to self-host ESPHome. There are two ways of doing this:
 
@@ -36,7 +39,7 @@ There are multiple ways to use ESPHome. For testing purposes and initialization 
 
    `Note:` This is not always possible. If you have setup Home Assistant with a Docker container refer to option `2`. From the [docs of Home Assistant](https://www.home-assistant.io/addons/):
    > Add-ons are only available if you've used the Home Assistant Operating System or Home Assistant Supervised installation method. If you installed Home Assistant using any other method then you cannot use add-ons.
-2. The other way to install ESPHome is to create a container for it. This is a simple a docker-compose example:
+2. The other way to install ESPHome is to create a container for it. This is a simple docker-compose example:
    ```yml
    version: '3'
 
@@ -60,10 +63,41 @@ There are multiple ways to use ESPHome. For testing purposes and initialization 
 ### GPIO
 # Integration into Home Assistant
 # Application Example: A bed presence sensor
+In this project we are going to build a presence sensor which reports to Home Assistant whether someone is lying in bed. Moreover we are going to use two sensors which allows us to determine which of the two halfs of a bed are occupied.
 ## Hardware
 ### Pressure sensor
-### Cabling
+To determine if someone is in bed, we use a pressure sensor. To be precise: We will use two sensors, one for each half of the bed. This way we can determine if there are `0`, `1` or `2` people in bed. This allows for even more possible automations, which we will cover later.
+
+The pressure sensor we use is a `PM156`, manufactured by the company `COMUS Group`. It can be obtained on different places like [SwitchElectronics](https://www.switchelectronics.co.uk/products/large-pressure-alarm-switch-mat-720-x-390mm-pm156) (where I bought mine from), [Amazon.de](https://www.amazon.de/dp/B07P5Z7L77) or [Ebay](https://www.ebay.co.uk/itm/253756658234). As explained above, I bought two, but this project can be done with just one if you are fine with knowing if there is *someone* in bed and not knowing how many people there are.
+
+This pressure sensor is essentially just a switch. When pressure is applied to the mat it pushes its two halfs together and thus closes the circuit.
+
+The pressure mat looks like this:
+![pressure mat](./Assets/pressure-sensor.jpg)
+> Image source: https://www.multice.com/
+
+It has four cables coming out of it. We only need two: from the perspective of this picture, the bottom two. These two complete an electrical circuit if pressure is applied to the mat. The other two cables are irrelevant for this project.
 ### Power
+To power the ESP32 I am using a standard micro-USB cable which I had lying around. As described above you should use a USB-C cable instead. Any cheap power supply does the job as the microcontroller needs a maximum of ~250 mA.
+### Cabling
+The completed circuit looks like this:
+![circuit](./Assets/circuit.svg)
+To the right is the ESP32 microcontroller. On the left you can see the two pressure mats, both connected to the ground of the ESP32 and to a GPIO pin.
+> Note: It is important which GPIO pins of the ESP32 you connect the pressure mats to, as different pins have different functions.
+
+Moreover you need to connect the ESP32 to power.
+
+To connect the cables of the pressure mats to the ESP32 I recommend using a breadboard to avoid the necessity of soldering.
+### Total cost
+To summarize all the hardware costs:
+* ESP32: 7,79 €
+* Pressure mats: 2 x 14 € = 28 €
+* Breadboard: 2 €
+* USB cable: 2 €
+* Power supply: 5 €
+* **Total**: 44,79 €
+
+I had the breadboard, usb cable and power supply lying around at home, so the total cost was only about 35 €.
 ## Software
 ### Requirements
 ### GPIO Configuration
