@@ -26,45 +26,18 @@ These SoCs are then placed on different boards: Several companies produce develo
 
 Although ESPHome primarily runs on [ESP32](https://esphome.io/components/esp32) and [ESP8266](https://esphome.io/components/esp8266)-based platforms it also includes limited support for [RP2040](https://esphome.io/components/rp2040)-based chips and chips based on the [LibreTiny](https://esphome.io/components/libretiny) platform.
 
-# Installation and Configuration
-
-In this project we will use the an ESP-32 development board which can be acquired on different platforms like [Amazon.com](https://www.amazon.com/s?k=ESP32), [Amazon.de](https://www.amazon.de/s?k=esp32) or [AliExpress](https://www.aliexpress.us/w/wholesale-esp32.html) for less then $10.
-
-I suggest that you look for a microcontroller that uses USB-C instead of micro-USB to be more future-proof.
-> Unfortunately, I did not explicitly check for this when I ordered my ESP32, so I am stuck with micro-USB. Don't make the same mistake I did.
-## Setup of ESPHome
-There are multiple ways to use ESPHome. For testing purposes and initialization of the microcontroller it is possible to use a web hosted version of ESPHome available at [https://web.esphome.io/](https://web.esphome.io/). However this is only a lite variant of ESPHome. For bigger projects it is recommended to self-host ESPHome. There are two ways of doing this:
-
-1. If you have a running Home Assistant instance you can install ESPHome as an add-on. The documentation on how to this can be found [here](https://esphome.io/guides/getting_started_hassio).
-
-   `Note:` This is not always possible. If you have setup Home Assistant with a Docker container refer to option `2`. From the [docs of Home Assistant](https://www.home-assistant.io/addons/):
-   > Add-ons are only available if you've used the Home Assistant Operating System or Home Assistant Supervised installation method. If you installed Home Assistant using any other method then you cannot use add-ons.
-2. The other way to install ESPHome is to create a container for it. This is a simple docker-compose example:
-   ```yml
-   version: '3'
-
-   services:
-     esphome:
-       image: ghcr.io/esphome/esphome
-       volumes:
-         - ./data/esphome:/config
-         - /etc/localtime:/etc/localtime:ro
-       ports:
-         - 6052:6052
-       environment:
-         - USERNAME=admin
-         - PASSWORD=mysecretpassword
-   ```
-   After running `docker-compose up` ESPHome can be accessed via an web browser on `<Hostname/IP of the server>:6052`.
-## How to flash an ESP32
-## Configuration of device
-### Wifi
-### Encryption
-### GPIO
-# Integration into Home Assistant
 # Application Example: A bed presence sensor
 In this project we are going to build a presence sensor which reports to Home Assistant whether someone is lying in bed. Moreover we are going to use two sensors which allows us to determine which of the two halfs of a bed are occupied.
+
+I have divided this project into two main sections: First, we'll cover the hardware, and then we'll take a look at the software, where we'll set up ESPHome, among other things.
 ## Hardware
+
+### Microcontroller
+In this project we will use an ESP-32 development board which can be acquired on different platforms like [Amazon.com](https://www.amazon.com/s?k=ESP32), [Amazon.de](https://www.amazon.de/s?k=esp32) or [AliExpress](https://www.aliexpress.us/w/wholesale-esp32.html) for less then $10.
+
+I suggest that you look for a microcontroller that uses USB-C instead of micro-USB to be more future-proof. Unfortunately, I did not explicitly check for this when I ordered my ESP32, so I am stuck with micro-USB. Don't make the same mistake I did.
+
+
 ### Pressure sensor
 To determine if someone is in bed, we use a pressure sensor. To be precise: We will use two sensors, one for each half of the bed. This way we can determine if there are `0`, `1` or `2` people in bed. This allows for even more possible automations, which we will cover later.
 
@@ -82,6 +55,7 @@ To power the ESP32 I am using a standard micro-USB cable which I had lying aroun
 ### Cabling
 The completed circuit looks like this:
 ![circuit](./Assets/circuit.svg)
+
 To the right is the ESP32 microcontroller. On the left you can see the two pressure mats, both connected to the ground of the ESP32 and to a GPIO pin.
 > Note: It is important which GPIO pins of the ESP32 you connect the pressure mats to, as different pins have different functions.
 
@@ -99,8 +73,56 @@ To summarize all the hardware costs:
 
 I had the breadboard, usb cable and power supply lying around at home, so the total cost was only about 35 €.
 ## Software
+After setting up the hardware it is time to take a closer look at the software needed for this project.
+
 ### Requirements
-### GPIO Configuration
+For this project we need a computer/server on which ESPHome can run. ESPHome does not need to run all the time, it is only needed for setup. So a computer that is not turned on all the time is fine. However, since you probably have a server where your Home Assistant instance is running, I suggest you deploy ESPHome on the same machine. I just added a section to the `docker-compose.yml` of Home Assistant for ESPHome as you can see below.
+
+### Setup of ESPHome
+There are multiple ways to use ESPHome. For testing purposes and initialization of the microcontroller it is possible to use a web hosted version of ESPHome available at [https://web.esphome.io/](https://web.esphome.io/). However this is only a lite variant of ESPHome. For bigger projects it is recommended to self-host ESPHome. There are two ways of doing this:
+
+1. If you have a running Home Assistant instance you can install ESPHome as an add-on. The documentation on how to this can be found [here](https://esphome.io/guides/getting_started_hassio).
+
+   `Note:` This is not always possible. If you have setup Home Assistant with a Docker container refer to option `2`. From the [docs of Home Assistant](https://www.home-assistant.io/addons/):
+   > Add-ons are only available if you've used the Home Assistant Operating System or Home Assistant Supervised installation method. If you installed Home Assistant using any other method then you cannot use add-ons.
+2. The other way to install ESPHome is to create a container for it. This is a simple `docker-compose.yml` example:
+   ```yml
+   version: '3'
+
+   services:
+     homeassistant:
+       build:
+         image: ghcr.io/home-assistant/home-assistant:latest
+       container_name: homeassistant_app
+       restart: always
+       volumes:
+        - ./data/homeassistant/config:/config
+       network_mode: host
+     esphome:
+       image: ghcr.io/esphome/esphome
+       container_name: homeassistant_esphome
+       volumes:
+         - ./data/esphome:/config
+         - /etc/localtime:/etc/localtime:ro
+       ports:
+         - 6052:6052
+       environment:
+         - USERNAME=admin
+         - PASSWORD=mysecretpassword # Change me
+   ```
+   After running `docker-compose up` ESPHome can be accessed via an web browser on `<Hostname/IP of the server>:6052`.
+
+   > Tip: *If you are tired of typing in ip addresses or hostnames combined with ports and having your browser warn you about insecure websites because of missing HTTP**S**, take a look at NginxProxyManager. It allows you to access your self-hosted services on FQDNs like esphome.mydomain.com with valid SSL certificates.*
+
+When opening the web portal you will be greeted with a login prompt where you have to enter the credentials you've defined in the `docker-compose.yml` (in this case `admin`:`mysecretpassword`)
+
+### Adding the ESP32 to ESPHome
+
+### Configuration of the ESP32
+#### Wifi
+#### Encryption
+#### GPIO
+
 ### Integration into Home Assistant and Configuration of Home Assistant
 ## Example for an automation
 # Conclusion
