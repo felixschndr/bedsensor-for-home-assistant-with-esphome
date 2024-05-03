@@ -1,11 +1,14 @@
 # Introduction
 The goal of this project is to create a presence sensor for a bed that reports its state to Home Assistant and thus can be used in automations. This is achieved by using two pressure sensors attached to an ESP32 micro controller which then relays the information about each half of the bed to the home automation server.
+
 # Fundamentals
-First, let us cover some of the basics that are necessary for this project.
+First of all, we want to cover some of the basics that will be necessary for this project.
+
 ## What is ESPHome?
 ESPHome is an open source platform that allows users to configure microcontrollers and integrate them into smart home systems such as Home Assistant. As such microcontrollers are very inexpensive, they are ideal for implementing your own smart home projects.
 
 ESPHome can be setup quite easily. There is a test version available at [https://web.esphome.io/](https://web.esphome.io/) and it can be self-hosted (for free) with Home Assistant or as an independent Docker container. I will go into further details on this in the [`setup`](#setup-of-esphome) part later.
+
 ## Which devices does ESPHome support?
 ESPHome *primarily* supports microcontrollers from the ESP8266 and ESP32 families, both manufactured by the Chinese company [*Espressif Systems*](https://www.espressif.com/). Some of the popular microcontrollers that can be used for ESPHome projects include the following:
 * ESP8266-based microcontrollers
@@ -30,6 +33,7 @@ Although ESPHome primarily runs on [ESP32](https://esphome.io/components/esp32) 
 In this project we are going to build a presence sensor which reports to Home Assistant whether someone is lying in bed. Moreover we are going to use two sensors which allows us to determine which of the two halfs of a bed are occupied.
 
 I have divided this project into two main sections: First, we'll cover the hardware, and then we'll take a look at the software, where we'll set up ESPHome, among other things.
+
 ## Hardware
 
 ### Microcontroller
@@ -50,8 +54,10 @@ The pressure mat looks like this:
 > Image source: https://www.multice.com/
 
 It has four cables coming out of it. We only need two: from the perspective of this picture, the bottom two. These two complete an electrical circuit if pressure is applied to the mat. The other two cables are irrelevant for this project.
+
 ### Power
 To power the ESP32 I am using a standard micro-USB cable which I had lying around. As described above you should use a USB-C cable instead. Any cheap power supply does the job as the microcontroller needs a maximum of ~250 mA.
+
 ### Cabling
 The completed circuit looks like this:
 ![circuit](./Assets/circuit.svg)
@@ -62,6 +68,7 @@ To the right is the ESP32 microcontroller. On the left you can see the two press
 Moreover you need to connect the ESP32 to power.
 
 To connect the cables of the pressure mats to the ESP32 I recommend using a breadboard to avoid the necessity of soldering.
+
 ### Total cost
 To summarize all the hardware costs:
 * ESP32: 7,79 €
@@ -72,6 +79,7 @@ To summarize all the hardware costs:
 * **Total**: 44,79 €
 
 I had the breadboard, usb cable and power supply lying around at home, so the total cost was only about 35 €.
+
 ## Software
 After setting up the hardware it is time to take a closer look at the software needed for this project.
 
@@ -112,13 +120,53 @@ There are multiple ways to use ESPHome. For testing purposes and initialization 
    ```
    After running `docker-compose up` ESPHome can be accessed via an web browser on `<Hostname/IP of the server>:6052`.
 
-   > Tip: *If you are tired of typing in ip addresses or hostnames combined with ports and having your browser warn you about insecure websites because of missing HTTP**S**, take a look at NginxProxyManager. It allows you to access your self-hosted services on FQDNs like esphome.mydomain.com with valid SSL certificates.*
+   > Hint: *If you are tired of typing in ip addresses or hostnames combined with ports and having your browser warn you about insecure websites because of missing HTTP**S**, take a look at NginxProxyManager. It allows you to access your self-hosted services on FQDNs like esphome.mydomain.com with valid SSL certificates.*
 
 When opening the web portal you will be greeted with a login prompt where you have to enter the credentials you've defined in the `docker-compose.yml` (in this case `admin`:`mysecretpassword`)
 
+When you open ESPHome for the first time, you will be greeted with a *pretty* empty screen:
+![First visit of ESPHome](./Assets/ESPHomeFirstVisit.png)
+
+#### Configuring WIFI
+
+Before adding the microcontroller, we will store the wifi password that the controller will later connect to in ESPHome. This is done in the `SECRETS` in the upper right corner. Enter your credentials like this
+```yml
+wifi_ssid: "yourWifiSSID"
+wifi_password: "yourWifiPassword"
+```
+This way we can reference the password from the configuration of the microcontroller and all the secrets (you can add other ones as well here) are stored in a single file. This has three main advantages:
+1. Your credentials are stored in a single place and not scattered across multiple files, making them easy to find and manage.
+2. If you need to change a variable, such as your WIFI password, you only need to change it once.
+3. The `SECRETS` are stored in a file called `secrets.yaml`. All the other configurations of ESPHome are also stored in files (and not in a database). This way you can initialize a git repo in the root directory of ESPHome, add the `secrets.yaml` file to the gitignore and keep track of the changes you make.
+
 ### Adding the ESP32 to ESPHome
 
+Now we are finally ready to add the microcontroller to ESPHome. Start by clicking on `New Device` and give your project name. I called mine `Bettsensor` (german for `bedsensor`).
+
+Afterwards ESPHome will ask you to connect your device to the computer you are using. Do so and be sure to use a cable which not only provides power but also transfers data.
+
+Click on `Connect` and select your microcontroller from the list.
+![Port selection](./Assets/port-selection.png)
+There can be two things that can make this stage difficult:
+1. The device you are trying to connect to does not appear in the list: Don't worry, this happened to me. Click on `Cancel`. A new screen will appear in ESPHome to help you with this problem:
+   ![No port selected](./Assets/no-port-selected.png)
+   The interesting part is installing the right drivers. ESPHome presents a list of common chips, chances are that one of them is the right one for you. To find the right one, I suggest you go to the site where you ordered the microcontroller and search for the individual terms:
+   ![search for chip](./Assets/searching-for-chip.png)
+   In my case the first chip was the right one. Click on the link and download the appropriate file and install it.
+2. There are too many devices and you don't know which one to choose: To find out which device you want to connect to, click `Cancel`, disconnect the microcontroller from your computer, and then click `Connect` again. Remember the displayed devices. Click `Cancel` again, reconnect your device, click `Connect` and select the device that has been added to the list.
+
+After selecting the device click `Connect` and after a second the device should pop on the dashboard:
+![Dashboard with sensor](./Assets/dashboard-with-sensor.png)
+
 ### Configuration of the ESP32
+
+Click on `Edit` on the tile of the device. A new screen will pop up with three main components:
+![edit tab of sensor](./Assets/edit-tab-of-sensor.png)
+1. A code editor for the configuration of the device with pre-filled information
+2. A `Save` button on the top right which saves the changes made in the code editor to ESPHome (and NOT to the device).
+3. An `Install` button which saves the configuration to ESPHome and to the device.
+
+In the following we will adjust the configuration to our needs.
 #### Wifi
 #### Encryption
 #### GPIO
