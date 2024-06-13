@@ -182,6 +182,8 @@ esp32:
     type: arduino
 ```
 
+You can find more information about the two configuration parameters [here](https://esphome.io/components/esphome) and [here](https://esphome.io/components/esp32.html).
+
 #### Logging
 
 We enable some basic logging. These logs can be viewed later in ESPHome and can help to debug problems.
@@ -194,15 +196,38 @@ logger:
   level: DEBUG
 ```
 
+You can find more information about this configuration parameter [here](https://esphome.io/components/logger.html).
+
+#### OTA
+
+To transfer the configuration wirelessly to the device you have to add an one-liner:
+```yaml
+ota:
+```
+If you're only planning to transfer changes via cable, you can leave this out, but it doesn't hurt to leave it in, especially if you're installing the ESP32 under your bed where it may be hard to reach.
+
+You can find more information about this configuration parameter [here](https://esphome.io/components/ota.html).
+
 #### API
 
-The `api` configuration enabled Home Assistant to access the ESP32.
+The `api` configuration enables Home Assistant to access the ESP32.
+```yaml
+api:
+```
+In addition it is possible to encrypt the connection between the two parties with a 32 byte base64 encoded pre shared key. Such a key can be generated on a command line by running `head -c 32 /dev/urandom | base64`. The configuration with encryption set up looks as follows:
+```yaml
+api:
+  encryption:
+    key: "Q0RumGgCXxzAhLyhRuhs/RcS/iNOAqWwp0n6RINbPOE="
+```
+
+You can find more information about this configuration parameter [here](https://esphome.io/components/api.html).
 
 #### WiFi
 
 The `wifi` configuration consists of several parts:
 1. Access to your WiFi: For this we use the secrets we [defined above](#configuring-wifi)
-2. The hostname of the device we want to use: With this setting we can define a hostname that the device will use, so we don't have to remember its IP address.
+2. The hostname where the device can be reached: If you've configured a DNS A record for your device, you can add it here so you don't have to remember its IP address.
 3. A fallback access point: If the device cannot connect to your WiFi (for example, after you change your WiFi password or if the access point is out of range), the device will create its own access point that you can connect to and configure.
 
 After the `wifi` section there is simple one-liner `captive_portal:`. This enables a captive portal that allows you to change the wifi credentials when connecting to the fallback access point:
@@ -224,6 +249,8 @@ wifi:
 
 captive_portal:
 ```
+
+You can find more information about this configuration parameter [here](https://esphome.io/components/wifi).
 
 #### GPIO
 
@@ -270,6 +297,8 @@ binary_sensor: # 1
 
 The entire configuration can be copied for a pressure sensor, only the pin number needs to be adjusted to allow the use of one sensor per side of the bed.
 
+You can find more information about these configuration parameters [here](https://esphome.io/components/binary_sensor/).
+
 #### Final
 
 The complete configuration is as follows:
@@ -284,6 +313,8 @@ esp32:
     type: arduino
 
 logger:
+
+ota:
 
 api:
   encryption:
@@ -327,6 +358,72 @@ binary_sensor:
       - delayed_on: 2s
       - delayed_off: 2s
 ```
+
+### Flashing the configuration to the ESP32
+
+Now we can flash the configuration to the device. The first time flashing the device **has** to be plugged in into your computer. On changes later wirelessly flashing works.
+
+1. Click on `Install` on the top right. This automatically also saves your config.
+2. Select `Plug into this computer`
+3. Select the port where the device is connected to (as [before](#adding-the-esp32-to-esphome)).
+4. Afterwards it will install the configtration to your device. Just wait a few seconds.
+   ![config installing](./Assets/config-installing.png)
+   ![config installed](./Assets/config-installed.png)
+5. Click on `Close` and exit the editor with the `X` on the top right.
+
+## Seeing the logs
+
+When clicking on `LOGS` of your device in the ESPHome dashboard you can connect to the device and see the logs in realtime:
+```txt
+INFO ESPHome 2023.12.9
+INFO Reading configuration /config/bettsensor.yaml...
+WARNING GPIO12 is a strapping PIN and should only be used for I/O with care.
+Attaching external pullup/down resistors to strapping pins can cause unexpected failures.
+See https://esphome.io/guides/faq.html#why-am-i-getting-a-warning-about-strapping-pins
+INFO Starting log output from bettsensor.fs using esphome API
+INFO Successfully connected to bettsensor @ 192.168.4.221 in 0.155s
+INFO Successful handshake with bettsensor @ 192.168.4.221 in 0.048s
+[15:26:40][I][app:102]: ESPHome version 2023.12.9 compiled on Jun 13 2024, 15:16:23
+[15:26:40][C][wifi:573]: WiFi:
+[15:26:40][C][wifi:405]:   Local MAC: [redacted]
+[15:26:40][C][wifi:410]:   SSID: [redacted]
+[15:26:40][C][wifi:411]:   IP Address: 192.168.4.221
+[15:26:40][C][wifi:413]:   BSSID: [redacted]
+[15:26:40][C][wifi:414]:   Hostname: 'bettsensor'
+[15:26:40][C][wifi:416]:   Signal strength: -59 dB ▂▄▆█
+[15:26:40][C][wifi:420]:   Channel: 11
+[15:26:40][C][wifi:421]:   Subnet: 255.255.255.0
+[15:26:40][C][wifi:422]:   Gateway: 192.168.4.1
+[15:26:40][C][wifi:423]:   DNS1: 192.168.4.1
+[15:26:40][C][wifi:424]:   DNS2: 0.0.0.0
+[15:26:40][C][logger:439]: Logger:
+[15:26:40][C][logger:440]:   Level: DEBUG
+[15:26:40][C][logger:441]:   Log Baud Rate: 115200
+[15:26:40][C][logger:443]:   Hardware UART: UART0
+[15:26:40][C][gpio.binary_sensor:015]: GPIO Binary Sensor 'Bettsensor left'
+[15:26:40][C][gpio.binary_sensor:015]:   Device Class: 'occupancy'
+[15:26:40][C][gpio.binary_sensor:016]:   Pin: GPIO13
+[15:26:40][C][gpio.binary_sensor:015]: GPIO Binary Sensor 'Bettsensor right'
+[15:26:40][C][gpio.binary_sensor:015]:   Device Class: 'occupancy'
+[15:26:40][C][gpio.binary_sensor:016]:   Pin: GPIO12
+[15:26:40][C][captive_portal:088]: Captive Portal:
+[15:26:40][C][mdns:115]: mDNS:
+[15:26:40][C][mdns:116]:   Hostname: bettsensor
+[15:26:40][C][ota:097]: Over-The-Air Updates:
+[15:26:40][C][ota:098]:   Address: bettsensor.fs:3232
+[15:26:40][C][api:139]: API Server:
+[15:26:40][C][api:140]:   Address: bettsensor.fs:6053
+[15:26:40][C][api:144]:   Using noise encryption: NO
+```
+
+When applying force to the pressure sensors you can see some log outputs:
+```txt
+[15:29:19][D][binary_sensor:036]: 'Bettsensor left': Sending state ON
+[15:29:22][D][binary_sensor:036]: 'Bettsensor left': Sending state OFF
+[15:29:37][D][binary_sensor:036]: 'Bettsensor right': Sending state ON
+[15:29:44][D][binary_sensor:036]: 'Bettsensor right': Sending state OFF
+```
+When doing this you can also notice the `delay_on` and `delay_off` filters we applied.
 
 ### Integration into Home Assistant and Configuration of Home Assistant
 ## Example for an automation
