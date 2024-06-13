@@ -166,10 +166,167 @@ Click on `Edit` on the tile of the device. A new screen will pop up with three m
 2. A `Save` button on the top right which saves the changes made in the code editor to ESPHome (and NOT to the device).
 3. An `Install` button which saves the configuration to ESPHome and to the device.
 
-In the following we will adjust the configuration to our needs.
-#### Wifi
-#### Encryption
+In the following we will adjust the configuration to our needs. All of the following sections are called `Component`s in the _ESPHome slang_. You can find the documentation about all components [on the ESPHome website](https://esphome.io/components/).
+
+#### Basics
+
+ESPHome needs to know the name of the device and what type of device it is dealing with. This is already filled out and does not need to be changed.
+```yaml
+esphome:
+  name: bettsensor
+  friendly_name: Bettsensor
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+```
+
+#### Logging
+
+We enable some basic logging. These logs can be viewed later in ESPHome and can help to debug problems.
+```yaml
+logger:
+```
+Yes, that's it. No further configuration required. You can also set the log level if you wish, as follows:
+```yaml
+logger:
+  level: DEBUG
+```
+
+#### API
+
+The `api` configuration enabled Home Assistant to access the ESP32.
+
+#### WiFi
+
+The `wifi` configuration consists of several parts:
+1. Access to your WiFi: For this we use the secrets we [defined above](#configuring-wifi)
+2. The hostname of the device we want to use: With this setting we can define a hostname that the device will use, so we don't have to remember its IP address.
+3. A fallback access point: If the device cannot connect to your WiFi (for example, after you change your WiFi password or if the access point is out of range), the device will create its own access point that you can connect to and configure.
+
+After the `wifi` section there is simple one-liner `captive_portal:`. This enables a captive portal that allows you to change the wifi credentials when connecting to the fallback access point:
+
+![capitve portal](./Assets/captive_portal-ui.png)
+> Image source: https://esphome.io/components/captive_portal.html
+
+The whole configuration looks like this:
+```yaml
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  use_address: bettsensor.fs
+
+  ap:
+    ssid: "Bettsensor Fallback Hotspot"
+    password: "my secret fallback password"
+
+captive_portal:
+```
+
 #### GPIO
+
+In the last section we will tackle the actual _sensing_ part: We will define the inputs that the device shall manage and how they are configured.
+
+The configuration looks like this:
+```yaml
+binary_sensor: # 1
+  - platform: gpio # 2
+    pin:
+      number: 13 # 3
+      inverted: true # 4
+      mode:
+        input: true # 5
+        pullup: true # 6
+    name: Bettsensor left # 7
+    device_class: occupancy # 8
+    filters: # 9
+      - delayed_on: 2s
+      - delayed_off: 2s
+  - platform: gpio
+    pin:
+      number: 12
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: Bettsensor right
+    device_class: occupancy
+    filters:
+      - delayed_on: 2s
+      - delayed_off: 2s
+```
+
+1. We tell ESPHome that we are using a `binary sensor`, i.e. a sensor that can be `ON` or `OFF`. Other components could be a `fan`, a `light` or a `button`.
+2. We define that we want to work with `GPIO` (General Purpose Input/Output) pins. Other options might include a temperature sensor built right into the ESP32 itself.
+3. We define the port by specifying its `number`. The ports are labeled on the device.
+4. By default, the sensor reports `ON` when the PIN is untouched. This is not what we want. We want the sensor to report `ON` when it is connected to ground, because this is what happens when you apply pressure to the pressure sensor. So we set `inverted` to `true`.
+5. Since GPIO pins are _General Purpose **Input/Output**_ pins we have to set the pin to be an `input`.
+6. We set `pullup` to `true`. This activates the pull-up resistors inside the ESP32 and helps to mitigate fast erroneous switching between `ON` and `OFF`. You can find more information [here](https://esphome.io/components/binary_sensor/gpio.html#activating-internal-pullups).
+7. The `name` configuration parameter defines what the sensor will be called in Home Assistant.
+8. The `device_class` setting is also for the Home Assistant. It defines what kind of device we are providing. This could be a `light` or a `fan` for example.
+9. Finally, we set two filters: If you turn in bed in the middle of the night or move around a little, you might not apply enough pressure for a short period of time. In this case we don't want the sensor to report no occupancy. For this we enable the `delay_on` and `delay_off` filters. For the sensor to report an `ON` state, the GPIO pin must be grounded for two seconds at a time. The same is true for the `OFF` state.
+
+The entire configuration can be copied for a pressure sensor, only the pin number needs to be adjusted to allow the use of one sensor per side of the bed.
+
+#### Final
+
+The complete configuration is as follows:
+```yaml
+esphome:
+  name: bettsensor
+  friendly_name: Bettsensor
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+api:
+  encryption:
+    key: "Q0RumGgCXxzAhLyhRuhs/RcS/iNOAqWwp0n6RINbPOE="
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  use_address: bettsensor.fs
+
+  ap:
+    ssid: "Bettsensor Fallback Hotspot"
+    password: "my secret fallback password"
+
+captive_portal:
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 13
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: Bettsensor left
+    device_class: occupancy
+    filters:
+      - delayed_on: 2s
+      - delayed_off: 2s
+  - platform: gpio
+    pin:
+      number: 12
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: Bettsensor right
+    device_class: occupancy
+    filters:
+      - delayed_on: 2s
+      - delayed_off: 2s
+```
 
 ### Integration into Home Assistant and Configuration of Home Assistant
 ## Example for an automation
