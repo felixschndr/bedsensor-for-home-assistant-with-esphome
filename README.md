@@ -507,6 +507,14 @@ action:
 mode: restart
 max_exceeded: silent
 ```
+
+Since we have not only the group but also the individual sensors in Home Assistant, we can create some automations that use this additional information. Examples:
+- Turn off all the lights when both people go to bed.
+- Turn on a small light when one person gets up in the middle of the night to get a glass of water.
+- Play a special Spotify playlist to help people fall asleep when the right side of the bed is occupied.
+- Close the shades when someone goes to bed.
+- Turn on the fan if the left side of the bed is occupied.
+
 # Conclusion
 
 I think this is a great project to dip your toes into ESPHome and get to know the system and its functionality. Also, a bed sensor is an unusual but (in my opinion) great addition to a smart home that will definitely earn some wife approval factor!
