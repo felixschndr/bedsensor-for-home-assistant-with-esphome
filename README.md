@@ -364,14 +364,14 @@ binary_sensor:
 Now we can flash the configuration to the device. The first time flashing the device **has** to be plugged in into your computer. On changes later wirelessly flashing works.
 
 1. Click on `Install` on the top right. This automatically also saves your config.
-2. Select `Plug into this computer`
+2. Select `Plug into this computer`.
 3. Select the port where the device is connected to (as [before](#adding-the-esp32-to-esphome)).
 4. Afterwards it will install the configtration to your device. Just wait a few seconds.
    ![config installing](./Assets/config-installing.png)
    ![config installed](./Assets/config-installed.png)
 5. Click on `Close` and exit the editor with the `X` on the top right.
 
-## Seeing the logs
+### Seeing the logs
 
 When clicking on `LOGS` of your device in the ESPHome dashboard you can connect to the device and see the logs in realtime:
 ```txt
@@ -425,6 +425,94 @@ When applying force to the pressure sensors you can see some log outputs:
 ```
 When doing this you can also notice the `delay_on` and `delay_off` filters we applied.
 
-### Integration into Home Assistant and Configuration of Home Assistant
-## Example for an automation
+## Integration into Home Assistant and Configuration of Home Assistant
+
+Normally ESPHome will automatically detect the ESP32 and prompt you to accept the addition. If this does not happen, simply add the integration in the settings application, search for `ESPHome` and enter the hostname or IP address of the device:
+![adding esphome to HA](./Assets/adding-esp-home-to-ha.png)
+![adding bedsensor to HA](./Assets/adding-bedsonsor-to-ha.png)
+You will then see the device and its two sensors:
+![bedsensor in HA](./Assets/bedsensor-in-ha.png)
+
+When you apply pressure to the sensor, you will see the change immediately (after the `delay_on` period) in Home Assistant:
+![bedsenor on](./Assets/bedsensor-detailed-in-ha.png)
+
+As you can see, the sensor is not added as any binary input, but as an occupancy detector.
+
+### Creating a group
+
+You can skip this step if you are using only one pressure sensor.
+
+Currently we have two independent sensors, one for the left side of the bed, one for the right side. However, for some automations we may need a sensor that reports if one of the two sides (`left` or `right` or `left and right`) is occupied:
+
+1. Switch to the `helpers` section in the settings.
+2. Click on `create helper`.
+3. Select `group`.
+4. Choose `binary sensor group`.
+5. Give the group a name and add the two entities for the left and right side.
+
+![creating a group](./Assets/bedsensor-group.png)
+
+This sensor is now `on` if any of the two sensors report pressure.
+
+### Example for an automation
+
+The following example shows an automation that turns on a light in the bedroom when motion is detected - but only when no one is in bed:
+![automation example](./Assets/automation-example.png)
+
+The whole code might look something like this:
+```yaml
+alias: Light - Bedroom - Turn the light on when detecting motion
+description: ""
+trigger:
+  - platform: state
+    entity_id:
+      - binary_sensor.motion_sensor_bedroom
+    to: "on"
+    alias: Motion detected
+condition:
+  - alias: Only after sunset
+    condition: sun
+    after: sunset
+    after_offset: "-01:00:00"
+  - alias: Noone is in bed
+    condition: state
+    entity_id: binary_sensor.bedsensor_any_side
+    state: "off"
+    enabled: true
+action:
+  - service: light.turn_on
+    target:
+      entity_id:
+        - light.bedlamp
+    data:
+      color_temp: 500
+      brightness_pct: 1
+    alias: Turn light on
+  - wait_for_trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.motion_sensor_bedroom
+        from: "on"
+        to: "off"
+    alias: Wait for no motion
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 20
+      milliseconds: 0
+    alias: Wait after no motion
+  - service: light.turn_off
+    target:
+      entity_id: light.bedlamp
+    data: {}
+    alias: Turn light off
+mode: restart
+max_exceeded: silent
+```
 # Conclusion
+
+I think this is a great project to dip your toes into ESPHome and get to know the system and its functionality. Also, a bed sensor is an unusual but (in my opinion) great addition to a smart home that will definitely earn some wife approval factor!
+
+This is just a brief introduction to ESPHome. There are so many more possibilities. I suggest you check out the [documentation](https://esphome.io/index.html) and especially the [`sensor components` section](https://esphome.io/index.html#sensor-components).
+
+Have fun tinkering :-)
