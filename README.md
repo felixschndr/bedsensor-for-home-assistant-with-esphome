@@ -95,12 +95,10 @@ There are multiple ways to use ESPHome. For testing purposes and initialization 
    > Add-ons are only available if you've used the Home Assistant Operating System or Home Assistant Supervised installation method. If you installed Home Assistant using any other method then you cannot use add-ons.
 2. The other way to install ESPHome is to create a container for it. This is a simple `docker-compose.yml` example:
    ```yml
-   version: '3'
-
    services:
      homeassistant:
        build:
-         image: ghcr.io/home-assistant/home-assistant:latest
+         image: ghcr.io/home-assistant/home-assistant
        container_name: homeassistant_app
        restart: always
        volumes:
@@ -118,7 +116,7 @@ There are multiple ways to use ESPHome. For testing purposes and initialization 
          - USERNAME=admin
          - PASSWORD=mysecretpassword # Change me
    ```
-   After running `docker-compose up` ESPHome can be accessed via an web browser on `<Hostname/IP of the server>:6052`.
+   After running `docker compose up` ESPHome can be accessed via an web browser on `<Hostname/IP of the server>:6052`.
 
    > Hint: *If you are tired of typing in ip addresses or hostnames combined with ports and having your browser warn you about insecure websites because of missing HTTP**S**, take a look at NginxProxyManager. It allows you to access your self-hosted services on FQDNs like esphome.mydomain.com with valid SSL certificates.*
 
